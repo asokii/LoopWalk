@@ -394,7 +394,10 @@ export function GoalSelectionScreen() {
       sessionStorage.setItem("selectedRoute", JSON.stringify(response));
       navigate("/walk");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to generate route.";
+      let message = error instanceof Error ? error.message : "Failed to generate route.";
+      if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
+        message = "Could not reach the backend API. Start FastAPI on http://127.0.0.1:8000 and run frontend via Vite dev server (/api proxy), or set VITE_API_BASE_URL.";
+      }
       setRouteError(message);
     } finally {
       setIsLoadingRoute(false);

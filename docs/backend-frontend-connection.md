@@ -24,13 +24,14 @@ Backend defaults to `http://127.0.0.1:8000` and frontend to `http://127.0.0.1:51
 Create `frontend/.env.local`:
 
 ```bash
-VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_API_BASE_URL=/api
+# optional override: http://127.0.0.1:8000
 ```
 
 Then read it in frontend code with:
 
 ```ts
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 ```
 
 ## 3) Add a typed API client
@@ -59,7 +60,7 @@ export type RouteResponse = {
   route_data: Record<string, unknown>;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -105,7 +106,7 @@ When user confirms goals in `GoalSelectionScreen`, add one backend call:
 Suggested payload mapping:
 
 ```ts
-const origin = "Chicago Loop, IL"; // replace with geolocated address later
+const origin = sessionStorage.getItem("origin")?.trim() ?? "";
 const mode = sessionStorage.getItem("mode");
 const destination = sessionStorage.getItem("destination") ?? "";
 const minutes = Number(sessionStorage.getItem("duration") ?? "30");
@@ -178,3 +179,27 @@ Then calls become `fetch("/api/route", ...)`.
 ---
 
 If you want, the next step is to implement this guide directly in `GoalSelectionScreen`, `CalibratedMapScreen`, and `ActiveNavigationScreen` with a production-ready typed adapter.
+
+## 9) Troubleshooting "Failed to fetch" in local dev
+
+If the Goal screen errors with `Failed to fetch`, check the following:
+
+1. **Backend running**
+   - Start FastAPI from repo root:
+
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
+
+2. **Frontend using proxy or correct API base**
+   - Default frontend calls use `/api` and rely on Vite proxy.
+   - If you override with `VITE_API_BASE_URL`, ensure it points to a reachable backend (for example `http://127.0.0.1:8000`).
+
+3. **Dev proxy is active**
+   - Start frontend with Vite dev server (`npm run dev` in `frontend/`) so `/api/*` forwards to backend.
+
+4. **Quick health check**
+   - Open `http://127.0.0.1:8000/health` and verify it returns `{ "status": "ok" }`.
+
+5. **Port mismatch**
+   - If backend runs on non-default port, update either Vite proxy target or `VITE_API_BASE_URL`.

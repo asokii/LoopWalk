@@ -23,7 +23,7 @@ export type RouteResponse = {
   route_data: RouteData;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -43,6 +43,12 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const loopwalkApi = {
+  health: async () => {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    if (!response.ok) throw new Error("Health check failed");
+    return response.json() as Promise<{ status: string }>;
+  },
+
   route: (payload: RouteRequest) => postJson<RouteResponse>("/route", payload),
   routeByDuration: (payload: DurationRouteRequest) =>
     postJson<RouteResponse>("/route/by-duration", payload),
