@@ -1,5 +1,6 @@
-# 🌆 LoopWalk AI
 
+<<<<<<< HEAD
+=======
 **Goal-Based Walking Intelligence for Urban Environments**
 
 LoopWalk AI is an AI-assisted walking route system that helps users navigate cities based on their intentions — not just distance.
@@ -331,3 +332,4 @@ LoopWalk AI is a rapid prototype designed for demonstration and experimentation.
 It focuses on clarity, reasoning transparency, and user experience rather than production accuracy.
 
 ---
+>>>>>>> fdda38c43045d621fe2758346b81bc5ed5555f5a
