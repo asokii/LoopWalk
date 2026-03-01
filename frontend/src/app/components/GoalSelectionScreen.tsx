@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronDown, ChevronUp, Landmark, Film, Zap, ArrowRight, M
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Input } from "./ui/input";
+import { loopwalkApi } from "../lib/api";
 
 type GoalCategory = "historic" | "movie" | "energy" | "food" | "custom" | null;
 
@@ -175,6 +176,23 @@ const FOOD_OPTIONS: FoodOption[] = [
   },
 ];
 
+function inferEnrichmentQueries(goalText: string): string[] {
+  const text = goalText.toLowerCase();
+  const queries = ["cafe"];
+
+  if (text.includes("calm") || text.includes("quiet") || text.includes("nature") || text.includes("park")) {
+    queries.push("park");
+  }
+  if (text.includes("food") || text.includes("restaurant") || text.includes("dine") || text.includes("wine")) {
+    queries.push("restaurant");
+  }
+  if (text.includes("historic") || text.includes("architecture") || text.includes("movie") || text.includes("landmark")) {
+    queries.push("landmark");
+  }
+
+  return Array.from(new Set(queries));
+}
+
 export function GoalSelectionScreen() {
   const [expandedCategory, setExpandedCategory] = useState<GoalCategory>(null);
   const [selectedHistoric, setSelectedHistoric] = useState<string | null>(null);
@@ -185,6 +203,8 @@ export function GoalSelectionScreen() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const [routeError, setRouteError] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -312,28 +332,81 @@ export function GoalSelectionScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    let goalType = "custom";
+    let goalDetailText = customPrompt.trim();
+
     if (selectedHistoric) {
       const place = HISTORIC_PLACES.find((p) => p.id === selectedHistoric);
-      sessionStorage.setItem("goal", "historic");
-      sessionStorage.setItem("goalDetail", place?.name || "");
+      goalType = "historic";
+      goalDetailText = place?.name || "Historic walk";
     } else if (selectedMovie) {
       const location = MOVIE_LOCATIONS.find((l) => l.id === selectedMovie);
-      sessionStorage.setItem("goal", "movie");
-      sessionStorage.setItem("goalDetail", location?.name || "");
+      goalType = "movie";
+      goalDetailText = location?.name || "Movie locations walk";
     } else if (selectedEnergy) {
       const energy = ENERGY_OPTIONS.find((m) => m.id === selectedEnergy);
-      sessionStorage.setItem("goal", "energy");
-      sessionStorage.setItem("goalDetail", energy?.name || "");
+      goalType = "energy";
+      goalDetailText = energy?.name || "Energy based walk";
     } else if (selectedFood) {
       const food = FOOD_OPTIONS.find((f) => f.id === selectedFood);
-      sessionStorage.setItem("goal", "food");
-      sessionStorage.setItem("goalDetail", food?.name || "");
-    } else if (customPrompt) {
-      sessionStorage.setItem("goal", "custom");
-      sessionStorage.setItem("goalDetail", customPrompt);
+      goalType = "food";
+      goalDetailText = food?.name || "Food walk";
     }
-    navigate("/walk");
+
+    sessionStorage.setItem("goal", goalType);
+    sessionStorage.setItem("goalDetail", goalDetailText);
+
+    const sessionMode = sessionStorage.getItem("mode");
+    if (!sessionMode) {
+      navigate("/start");
+      return;
+    }
+
+    const origin = sessionStorage.getItem("origin")?.trim();
+    if (!origin) {
+      setRouteError("Please set a valid starting point.");
+      navigate("/start");
+      return;
+    }
+
+    setRouteError("");
+    setIsLoadingRoute(true);
+
+    try {
+      const enrichmentQueries = inferEnrichmentQueries(goalDetailText);
+
+      const response =
+        sessionMode === "destination"
+          ? await loopwalkApi.route({
+              origin,
+              destination: sessionStorage.getItem("destination") || origin,
+              user_query: goalDetailText,
+              enrichment_queries: enrichmentQueries,
+            })
+          : await loopwalkApi.routeByDuration({
+              origin,
+              minutes: Number(sessionStorage.getItem("duration") || "30"),
+              user_query: goalDetailText,
+              enrichment_queries: enrichmentQueries,
+            });
+
+      sessionStorage.setItem("selectedRoute", JSON.stringify(response));
+      navigate("/walk");
+    } catch (error) {
+      let message = error instanceof Error ? error.message : "Failed to generate route.";
+      if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
+        message = "Could not reach the backend API. Start FastAPI on http://127.0.0.1:8000 and run frontend via Vite dev server (/api proxy), or set VITE_API_BASE_URL.";
+      }
+      if (error instanceof Error && error.message.includes("Request failed (500)")) {
+        message = `${error.message}
+
+Tip: this usually means Google Maps/OpenAI env keys are missing or invalid on backend.`;
+      }
+      setRouteError(message);
+    } finally {
+      setIsLoadingRoute(false);
+    }
   };
 
   const handlePresetSelection = (name: string) => {
@@ -359,7 +432,7 @@ export function GoalSelectionScreen() {
     }, 800);
   };
 
-  const hasSelection = selectedHistoric || selectedMovie || selectedEnergy || selectedFood || customPrompt;
+  const hasSelection = selectedHistoric || selectedMovie || selectedEnergy || selectedFood || customPrompt.trim();
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-[430px] mx-auto">
@@ -711,14 +784,20 @@ export function GoalSelectionScreen() {
           </div>
         </div>
 
+        {routeError && (
+          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {routeError}
+          </div>
+        )}
+
         <div className="mt-6">
           <Button
             onClick={handleContinue}
-            disabled={!hasSelection}
+            disabled={!hasSelection || isLoadingRoute}
             className="w-full h-14 rounded-xl bg-gradient-to-r from-[#E4002B] to-[#FF6D6D] hover:opacity-90 active:bg-[#E4002B] active:bg-none text-white disabled:opacity-50"
           >
-            Continue
-            <ArrowRight className="ml-2 w-5 h-5" />
+            {isLoadingRoute ? "Generating Route..." : "Continue"}
+            {!isLoadingRoute && <ArrowRight className="ml-2 w-5 h-5" />}
           </Button>
         </div>
       </div>

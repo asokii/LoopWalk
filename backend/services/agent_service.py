@@ -1,4 +1,5 @@
 from loopwalk_ai.runner import run_agent, run_agent_by_duration
+from backend.services.maps_service import build_static_map_url
 
 
 def get_best_route(
@@ -23,10 +24,13 @@ def get_best_route(
 
     chosen_id = agent_state["chosen_route_id"]
 
+    chosen_route = enriched_routes[chosen_id]
+    chosen_route["static_map_url"] = build_static_map_url(chosen_route)
+
     return {
         "route_id": chosen_id,
-        "summary": enriched_routes[chosen_id]["summary"],
-        "route": enriched_routes[chosen_id],
+        "summary": chosen_route["summary"],
+        "route": chosen_route,
         "explanation": agent_state["explanation"],
 
         # optional debug info (can remove later)
@@ -51,10 +55,13 @@ def get_best_route_by_duration(
 
     chosen_id = agent_state["chosen_route_id"]
 
+    chosen_route = enriched_routes[chosen_id]
+    chosen_route["static_map_url"] = build_static_map_url(chosen_route)
+
     return {
         "route_id": chosen_id,
-        "summary": enriched_routes[chosen_id].get("summary", f"Route {chosen_id}"),
-        "route": enriched_routes[chosen_id],
+        "summary": chosen_route.get("summary", f"Route {chosen_id}"),
+        "route": chosen_route,
         "explanation": agent_state["explanation"],
     }
 
