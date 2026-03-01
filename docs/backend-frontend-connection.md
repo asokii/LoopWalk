@@ -178,3 +178,27 @@ Then calls become `fetch("/api/route", ...)`.
 ---
 
 If you want, the next step is to implement this guide directly in `GoalSelectionScreen`, `CalibratedMapScreen`, and `ActiveNavigationScreen` with a production-ready typed adapter.
+
+## 9) Troubleshooting "Failed to fetch" in local dev
+
+If the Goal screen errors with `Failed to fetch`, check the following:
+
+1. **Backend running**
+   - Start FastAPI from repo root:
+
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
+
+2. **Frontend using proxy or correct API base**
+   - Default frontend calls use `/api` and rely on Vite proxy.
+   - If you override with `VITE_API_BASE_URL`, ensure it points to a reachable backend (for example `http://127.0.0.1:8000`).
+
+3. **Dev proxy is active**
+   - Start frontend with Vite dev server (`npm run dev` in `frontend/`) so `/api/*` forwards to backend.
+
+4. **Quick health check**
+   - Open `http://127.0.0.1:8000/health` and verify it returns `{ "status": "ok" }`.
+
+5. **Port mismatch**
+   - If backend runs on non-default port, update either Vite proxy target or `VITE_API_BASE_URL`.
