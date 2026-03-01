@@ -210,6 +210,83 @@ LoopWalk/
 └── README.md
 ```
 
+## ▶️ How to Run
+
+### 1️⃣ Clone the repository
+
+    git clone <your-repo-url>
+    cd LoopWalk
+
+---
+
+### 2️⃣ Create and activate a virtual environment
+
+    python -m venv venv
+    source venv/bin/activate      # Mac/Linux
+    venv\Scripts\activate         # Windows
+
+---
+
+### 3️⃣ Install dependencies
+
+All Python dependencies for the backend and agent live in:
+
+    loopwalk_ai/requirements.txt
+
+Install them with:
+
+    pip install -r loopwalk_ai/requirements.txt
+
+---
+
+### 4️⃣ Create a `.env` file in the project root
+
+Add the following keys:
+
+    OPENAI_API_KEY=your_openai_key_here
+    GOOGLE_MAPS_API_KEY=your_google_maps_key_here
+
+These are required for:
+
+• LLM reasoning (OpenAI)  
+• Route + Places data (Google Maps APIs)
+
+---
+
+### 5️⃣ Start the FastAPI backend
+
+Run from the project root:
+
+    uvicorn backend.main:app --reload
+
+You should see:
+
+    Uvicorn running on http://127.0.0.1:8000
+
+---
+
+### 6️⃣ Test the API
+
+Open:
+
+    http://127.0.0.1:8000/docs
+
+This launches the interactive Swagger UI where you can test:
+
+• `/route` — destination-based routing  
+• `/route-duration` — time-based walking loops  
+
+---
+
+### ✅ You're ready to go!
+
+The backend will now:
+
+1. Generate multiple candidate routes  
+2. Enrich them with POIs, crowd, and safety signals  
+3. Use the agent to select the best one  
+4. Return the chosen route with an explanation
+
 ---
 
 ## 🚀 API Endpoints
