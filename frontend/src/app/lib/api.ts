@@ -35,7 +35,21 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    let message = "";
+
+    try {
+      const json = (await response.json()) as { detail?: string };
+      message = json?.detail ?? "";
+    } catch {
+      // Fallback if backend/proxy response is not JSON.
+      message = (await response.text()).trim();
+    }
+
+    if (!message && response.status >= 500) {
+      message =
+        "Backend returned 500. Ensure FastAPI is running on http://127.0.0.1:8000 and check backend logs.";
+    }
+
     throw new Error(`Request failed (${response.status}): ${message || path}`);
   }
 

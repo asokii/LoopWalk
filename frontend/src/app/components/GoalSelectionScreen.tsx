@@ -398,6 +398,11 @@ export function GoalSelectionScreen() {
       if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
         message = "Could not reach the backend API. Start FastAPI on http://127.0.0.1:8000 and run frontend via Vite dev server (/api proxy), or set VITE_API_BASE_URL.";
       }
+      if (error instanceof Error && error.message.includes("Request failed (500)")) {
+        message = `${error.message}
+
+Tip: this usually means Google Maps/OpenAI env keys are missing or invalid on backend.`;
+      }
       setRouteError(message);
     } finally {
       setIsLoadingRoute(false);

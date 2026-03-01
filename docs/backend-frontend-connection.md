@@ -203,3 +203,7 @@ If the Goal screen errors with `Failed to fetch`, check the following:
 
 5. **Port mismatch**
    - If backend runs on non-default port, update either Vite proxy target or `VITE_API_BASE_URL`.
+
+6. **500 from `/route` or `/route/by-duration`**
+   - Check backend terminal logs for root cause details.
+   - Most common causes are missing/invalid `GOOGLE_MAPS_API_KEY` or `OPENAI_API_KEY` in backend `.env`.
