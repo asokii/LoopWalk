@@ -43,6 +43,12 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const loopwalkApi = {
+  health: async () => {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    if (!response.ok) throw new Error("Health check failed");
+    return response.json() as Promise<{ status: string }>;
+  },
+
   route: (payload: RouteRequest) => postJson<RouteResponse>("/route", payload),
   routeByDuration: (payload: DurationRouteRequest) =>
     postJson<RouteResponse>("/route/by-duration", payload),
