@@ -6,6 +6,7 @@ from backend.services.crowd_service import get_crowd_density
 from backend.services.safety_service import get_crime_risk
 
 import math
+from urllib.parse import quote_plus
 
 def haversine_m(lat1, lon1, lat2, lon2):
     """Distance in meters between two lat/lng points."""
@@ -31,6 +32,7 @@ DIRECTIONS_URL = "https://maps.googleapis.com/maps/api/directions/json"
 GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 PLACES_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+STATIC_MAP_URL = "https://maps.googleapis.com/maps/api/staticmap"
 
 
 # -------------------------
@@ -48,6 +50,42 @@ def sample_route_points(coords, step=15):
     Take every Nth point along the route.
     """
     return coords[::step]
+
+
+def build_static_map_url(route, width=900, height=500, zoom=14):
+    """Build a Google Static Maps image URL for a route polyline + start/end markers."""
+    if not GOOGLE_API_KEY:
+        return None
+
+    overview = route.get("overview_polyline", {})
+    encoded_polyline = overview.get("points")
+    if not encoded_polyline:
+        return None
+
+    legs = route.get("legs", [])
+    if not legs:
+        return None
+
+    leg = legs[0]
+    start = leg.get("start_location", {})
+    end = leg.get("end_location", {})
+
+    if "lat" not in start or "lng" not in start or "lat" not in end or "lng" not in end:
+        return None
+
+    path_param = quote_plus(f"weight:5|color:0xE4002BFF|enc:{encoded_polyline}")
+    start_marker = quote_plus(f"color:0x336699|label:S|{start['lat']},{start['lng']}")
+    end_marker = quote_plus(f"color:0xE4002B|label:E|{end['lat']},{end['lng']}")
+
+    return (
+        f"{STATIC_MAP_URL}?size={width}x{height}"
+        f"&maptype=roadmap"
+        f"&zoom={zoom}"
+        f"&path={path_param}"
+        f"&markers={start_marker}"
+        f"&markers={end_marker}"
+        f"&key={GOOGLE_API_KEY}"
+    )
 
 def search_places(lat, lng, query, radius=75):
     params = {

@@ -1,5 +1,5 @@
 import image_d6934776d937b30755bde312d201730947b967dc from 'figma:assets/d6934776d937b30755bde312d201730947b967dc.png'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { MapPin, Clock, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
@@ -21,14 +21,36 @@ const POPULAR_DESTINATIONS = [
 
 export function StartScreen() {
   const [mode, setMode] = useState<"destination" | "duration">("destination");
+  const [origin, setOrigin] = useState("Chicago Loop, IL");
   const [destination, setDestination] = useState("");
   const [duration, setDuration] = useState(30);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const savedOrigin = sessionStorage.getItem("origin");
+    const savedDestination = sessionStorage.getItem("destination");
+    const savedMode = sessionStorage.getItem("mode");
+    const savedDuration = sessionStorage.getItem("duration");
+
+    if (savedOrigin) setOrigin(savedOrigin);
+    if (savedDestination) setDestination(savedDestination);
+    if (savedMode === "destination" || savedMode === "duration") setMode(savedMode);
+    if (savedDuration) {
+      const parsed = Number(savedDuration);
+      if (!Number.isNaN(parsed)) setDuration(parsed);
+    }
+  }, []);
+
   const handleContinue = () => {
+    const trimmedOrigin = origin.trim();
+
+    if (!trimmedOrigin) return;
+
+    sessionStorage.setItem("origin", trimmedOrigin);
+
     if (mode === "destination" && destination.trim()) {
       sessionStorage.setItem("mode", "destination");
-      sessionStorage.setItem("destination", destination);
+      sessionStorage.setItem("destination", destination.trim());
       sessionStorage.removeItem("duration");
     } else if (mode === "duration") {
       sessionStorage.setItem("mode", "duration");
@@ -44,7 +66,7 @@ export function StartScreen() {
     setDestination(place);
   };
 
-  const canContinue = mode === "destination" ? destination.trim() : true;
+  const canContinue = mode === "destination" ? origin.trim() && destination.trim() : origin.trim();
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-[430px] mx-auto">
@@ -121,14 +143,26 @@ export function StartScreen() {
                   <div className="w-3 h-3 bg-[#336699] rounded-full"></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground mb-0.5">Current Location</p>
-                  <p className="text-sm font-medium truncate">Chicago Loop, IL</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Starting point</p>
+                  <p className="text-sm font-medium truncate">{origin || "Set your starting location"}</p>
                 </div>
               </div>
+
+              <p className="text-xs text-muted-foreground mb-3">
+                🌍 You can start from anywhere (city, landmark, or full street address).
+              </p>
               
               <Input
                 type="text"
-                placeholder="Enter destination..."
+                placeholder="Enter your starting point (any city/address)..."
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+                className="h-14 bg-card border-border rounded-xl px-5 placeholder:text-muted-foreground/60 mb-3"
+              />
+
+              <Input
+                type="text"
+                placeholder="Enter destination (any city/address)..."
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleContinue()}
@@ -158,6 +192,14 @@ export function StartScreen() {
 
           <TabsContent value="duration" className="mt-6 space-y-8">
             <div>
+              <Input
+                type="text"
+                placeholder="Enter your starting point (any city/address)..."
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+                className="h-14 bg-card border-border rounded-xl px-5 placeholder:text-muted-foreground/60 mb-6"
+              />
+
               <div className="text-center mb-8">
                 <div className="text-6xl mb-2 text-primary">{duration}</div>
                 <div className="text-muted-foreground">minutes</div>
