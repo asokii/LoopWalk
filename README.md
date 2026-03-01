@@ -57,10 +57,12 @@ LoopWalk currently supports **two types of route generation**:
 Given an origin and destination:
 
 * The system queries Google Maps for walking routes
-* It forces route diversity using waypoint perturbations
-* Multiple alternative paths are collected
+* It computes a midpoint between origin and destination
+* Multiple artificial waypoints are created around this midpoint
+* Each waypoint is shifted slightly (roughly **500 m to 2 km**) to force different paths
+* The routing API is called with each waypoint to generate diverse alternatives
 
-This produces several viable routes between two locations.
+This produces several viable routes between two locations that may pass through different streets, amenities, or neighborhoods rather than small variations of the same path.
 
 ---
 
@@ -70,8 +72,9 @@ Given an origin and available time:
 
 * Walking radius is estimated using average walking speed
 * Boundary points are generated in a circle around the origin
-* Routes are generated from origin to those boundary points
-* This creates candidate walks that fit within the time budget
+* Each boundary point is slightly perturbed to avoid symmetric routes
+* Routes are generated from origin to these boundary points
+* This creates candidate walks that fit within the time budget while exploring different directions
 
 This allows users to say:
 
